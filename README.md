@@ -2,6 +2,21 @@
 
 El módulo es un elemento estructural de Magento 2 - todo el sistema se basa en módulos. Normalmente, el primer paso para crear una personalización es construir un módulo.
 
+## Índice
+
+[Primeros Pasos](#primeros-pasos) 
+- [1. Crear archivos de configuración](#1-crear-archivos-de-configuración)
+- [2. Crear rutas, controlador, template y layout](#2-crear-rutas-controlador-template-y-layout)
+- [3. Ejecutar el script de instalación](#3-ejecutar-el-script-de-instalación)
+- [4. Comprobar que el módulo está funcionando](#4-comprobar-que-el-módulo-está-funcionando)
+
+[Base de Datos](#base-de-datos) 
+- [Crear Tablas](#crear-tablas)
+- [Insertar información en las Tablas](#insertar-información-en-las-tablas)
+- [Actualizar Estructura de Tablas](#actualizar-estructura-de-tablas)
+- [Actualizar Valores de la Tabla](#actualizar-valores-de-la-tabla)
+- [Actualizar Versión del Módulo](#actualizar-versión-del-módulo)
+
 ## Primeros pasos
 
 Para crear un módulo, se deben completar los siguientes pasos fundamentales:
