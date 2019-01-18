@@ -154,6 +154,10 @@ El contenido del módulo podrá verse desde la ruta que se creo anteriormente:
 ```
 http://sitio.com/example/index/index
 ```
+o de forma abreviada
+```
+http://sitio.com/example
+```
 En la base de datos, en la tabla **setup_module** es posible ver el nuevo módulo instalado:
 ```
 SELECT * FROM magento.web_setup_module where module = 'Tutorial_Example';
