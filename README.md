@@ -162,3 +162,266 @@ En la base de datos, en la tabla **setup_module** es posible ver el nuevo módul
 ```
 SELECT * FROM magento.web_setup_module where module = 'Tutorial_Example';
 ```
+
+## Base de Datos
+### Crear Tablas
+Crear el archivo: **app/code/Tutorial/Example/Setup/InstallSchema.php** para crear y declarar la nueva tabla:
+```
+<?php
+
+namespace Tutorial\Example\Setup;
+
+use Magento\Framework\Setup\InstallSchemaInterface;
+use Magento\Framework\Setup\ModuleContextInterface;
+use Magento\Framework\Setup\SchemaSetupInterface;
+use Magento\Framework\DB\Ddl\Table;
+
+class InstallSchema implements InstallSchemaInterface
+{
+    public function install(SchemaSetupInterface $setup, ModuleContextInterface $context)
+    {
+        $installer = $setup;
+        $installer->startSetup();
+
+        // Get tutorial_example table
+        $tableName = $installer->getTable('tutorial_example');
+        // Check if the table already exists
+        if ($installer->getConnection()->isTableExists($tableName) != true) {
+            // Create tutorial_example table
+            $table = $installer->getConnection()
+                ->newTable($tableName)
+                ->addColumn(
+                    'id',
+                    Table::TYPE_INTEGER,
+                    null,
+                    [
+                        'identity' => true,
+                        'unsigned' => true,
+                        'nullable' => false,
+                        'primary' => true
+                    ],
+                    'ID'
+                )
+                ->addColumn(
+                    'title',
+                    Table::TYPE_TEXT,
+                    null,
+                    ['nullable' => false, 'default' => ''],
+                    'Title'
+                )
+                ->addColumn(
+                    'summary',
+                    Table::TYPE_TEXT,
+                    null,
+                    ['nullable' => false, 'default' => ''],
+                    'Summary'
+                )
+                ->addColumn(
+                    'description',
+                    Table::TYPE_TEXT,
+                    null,
+                    ['nullable' => false, 'default' => ''],
+                    'Description'
+                )
+                ->addColumn(
+                    'created_at',
+                    Table::TYPE_DATETIME,
+                    null,
+                    ['nullable' => false],
+                    'Created At'
+                )
+                ->addColumn(
+                    'status',
+                    Table::TYPE_SMALLINT,
+                    null,
+                    ['nullable' => false, 'default' => '0'],
+                    'Status'
+                )
+                ->setComment('News Table')
+                ->setOption('type', 'InnoDB')
+                ->setOption('charset', 'utf8');
+            $installer->getConnection()->createTable($table);
+        }
+
+        $installer->endSetup();
+    }
+}
+```
+
+Esta clase, deberá llamarse **InstallSchema** y deberá implementar la interface **InstallSchemaInterface**, además debera contener el método **install**.
+```
+public function install(SchemaSetupInterface $setup, ModuleContextInterface $context)
+```
+Este método debera iniciar y terminar con las lineas:
+```
+$setup->startSetup();
+... 
+$setup->endSetup();
+```
+
+### Insertar información en las Tablas
+Crear el archivo: **app/code/Tutorial/Example/Setup/InstallData.php**
+```
+<?php
+
+namespace Tutorial\Example\Setup;
+
+use Magento\Framework\Setup\InstallDataInterface;
+use Magento\Framework\Setup\ModuleContextInterface;
+use Magento\Framework\Setup\ModuleDataSetupInterface;
+
+class InstallData implements InstallDataInterface
+{
+    /**
+     * {@inheritdoc}
+     */
+    public function install(ModuleDataSetupInterface $setup, ModuleContextInterface $context)
+    {
+        $setup->startSetup();
+
+        $setup->getConnection()->insert(
+            $setup->getTable('tutorial_example'),
+            [
+                'title' => 'How to create a simple module',
+                'summary' => 'The summary',
+                'description' => 'The description',
+                'created_at' => date('Y-m-d H:i:s'),
+                'status' => 1
+            ]
+        );
+
+        $setup->getConnection()->insert(
+            $setup->getTable('tutorial_example'),
+            [
+                'title' => 'Create a module with custom database table',
+                'summary' => 'The summary',
+                'description' => '',
+                'created_at' => date('Y-m-d H:i:s'),
+                'status' => 1
+            ]
+        );
+
+        $setup->endSetup();
+    }
+}
+```
+### Actualizar Estructura de Tablas
+
+Crear el archivo: **app/code/Tutorial/Example/Setup/UpgradeSchema.php**
+
+```
+<?php
+
+namespace Tutorial\Example\Setup;
+
+use Magento\Framework\Setup\UpgradeSchemaInterface;
+use Magento\Framework\Setup\ModuleContextInterface;
+use Magento\Framework\Setup\SchemaSetupInterface;
+use Magento\Framework\DB\Ddl\Table;
+
+class UpgradeSchema implements UpgradeSchemaInterface
+{
+    /**
+     * {@inheritdoc}
+     */
+    public function upgrade(SchemaSetupInterface $setup, ModuleContextInterface $context)
+    {
+        $setup->startSetup();
+
+        if (version_compare($context->getVersion(), '1.0.1', '<')) {
+            // Get tutorial_example table
+            $tableName = $setup->getTable('tutorial_example');
+
+            $setup->getConnection()->addColumn(
+                $setup->getTable($tableName),
+                'newcolumn',
+                [
+                    'type' => Table::TYPE_TEXT,
+                    'nullable' => true,
+                    'comment' => 'New Column'
+                ]
+            );
+        }
+
+        $setup->endSetup();
+    }
+}
+```
+
+### Actualizar Valores de la Tabla
+
+Crear el archivo: **app/code/Tutorial/Example/Setup/UpgradeData.php**
+
+```
+<?php
+
+namespace Tutorial\Example\Setup;
+
+use Magento\Framework\Setup\ModuleContextInterface;
+use Magento\Framework\Setup\ModuleDataSetupInterface;
+use Magento\Framework\Setup\UpgradeDataInterface;
+
+class UpgradeData implements UpgradeDataInterface
+{
+    /**
+     * {@inheritdoc}
+     */
+    public function upgrade(ModuleDataSetupInterface $setup, ModuleContextInterface $context)
+    {
+        $setup->startSetup();
+
+        if (version_compare($context->getVersion(), '1.0.1', '<')) {
+            // Get tutorial_example table
+            $tableName = $setup->getTable('tutorial_example');
+
+            // Update Row
+            $setup->getConnection()->update(
+                $setup->getTable($tableName),
+                [
+                    'description' => 'New description'
+                ],
+                $setup->getConnection()->quoteInto('id = ?', 2)
+            );
+
+            // Add new row
+            $data = [
+                [
+                    'title' => 'How to create another module',
+                    'summary' => 'The new summary',
+                    'description' => 'The description',
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'status' => 1
+                ],
+                [
+                    'title' => 'Create another module with custom database table',
+                    'summary' => 'The other summary',
+                    'description' => 'The description',
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'status' => 1
+                ]
+            ];
+
+            // Insert data to table
+            foreach ($data as $item) {
+                $setup->getConnection()->insert($tableName, $item);
+            }
+        }
+
+        $setup->endSetup();
+    }
+}
+```
+
+### Actualizar Versión del Módulo
+
+```
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">
+    <module name="Tutorial_Example" setup_version="1.0.1">
+        <sequence>
+            <module name="Magento_Catalog"/>
+        </sequence>
+    </module>
+</config>
+
+```
