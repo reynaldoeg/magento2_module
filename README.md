@@ -440,3 +440,177 @@ class UpgradeData implements UpgradeDataInterface
 </config>
 
 ```
+
+## MVC
+### Model Layer
+Crear archivo Model/ResourceModel/Item.php, el cual contendrá la clase Item que extenderá de la clase **AbstractDb** y en su método constructor se seleccionara la tabla que utilizará
+
+```
+<?php
+
+namespace Tutorial\Example\Model\ResourceModel;
+
+use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
+
+class Item extends AbstractDb
+{
+    protected function _construct()
+    {
+        $this->_init('tutorial_example', 'id');
+    }
+}
+```
+Crear archivo Model/Item.php el cual contendrá la clase Item y en este caso extenderá de la clase **AbstractModel** y en su método constructor se indicará que se utilizará la clase creada anteriormente.
+```
+<?php
+
+namespace Tutorial\Example\Model;
+
+use Magento\Framework\Model\AbstractModel;
+
+class Item extends AbstractModel
+{
+    protected function _construct()
+    {
+        $this->_init(\Tutorial\Example\Model\ResourceModel\Item::class);
+    }
+}
+```
+Por último se creará el archivo Model/ResourceModel/Item/Collection.php que contiene la clase **Collection** la cual extiende de la clase de **AbstractCollection** y en su método constructor se pasan las 2 clases creadas anteriormente.
+```
+<?php
+
+namespace Tutorial\Example\Model\ResourceModel\Item;
+
+use Magento\Framework\Model\ResourceModel\Db\Collection\AbstractCollection;
+use Tutorial\Example\Model\Item;
+use Tutorial\Example\Model\ResourceModel\Item as ItemResource;
+
+class Collection extends AbstractCollection
+{
+    protected $_idFieldName = 'id';
+
+    protected function _construct()
+    {
+        $this->_init(Item::class, ItemResource::class);
+    }
+}
+
+```
+
+### View Layer
+**Blocks**
+Crear el archivo Block/index.php el cual  obtendrá los valores de la base de datos utilizando el Modelo que se creo anteriormente, específicamente la clase **Collection**. El método **getItems()** regresará los valores.
+```
+<?php
+
+namespace Tutorial\Example\Block;
+
+use Magento\Framework\View\Element\Template;
+use Tutorial\Example\Model\ResourceModel\Item\Collection;
+use Tutorial\Example\Model\ResourceModel\Item\CollectionFactory;
+
+class Index extends Template
+{
+    private $collectionFactory;
+
+    public function __construct(
+        Template\Context $context,
+        CollectionFactory $collectionFactory,
+        array $data = []
+    ) {
+        $this->collectionFactory = $collectionFactory;
+        parent::__construct($context, $data);
+    }
+
+    /**
+     * @return \Tutorial\Example\Model\Item[]
+     */
+    public function getItems()
+    {
+        return $this->collectionFactory->create()->getItems();
+    }
+}
+```
+**Layout**
+En el caso del archivo view/frontend/layout/example_index_index.php que ya existía, se modificará el atributo **class** de la etiqueta **block** para indicar que utilice el bloque Index.php que creamos.
+```
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" layout="1column" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="content">
+            <block class="Tutorial\Example\Block\Index" name="tutorial_example_block" template="Tutorial_Example::index.phtml" />
+        </referenceContainer>
+    </body>
+</page>
+```
+**Templates**
+En el caso del archivo view/frontend/templates/index.phtml que ya existía, le agregaremos las  líneas que toman la información del Bloque **Index.php**; mediante un foreach() interactuamos entre cada registro devuelto para obtener los campos de la tabla.
+```
+<h1><?php echo __('This is an example module!') ?></h1>
+
+<?php
+/** @var \Tutorial\Example\Block\Index $block */
+?>
+<?php foreach ($block->getItems() as $item): ?>
+    <h2><b><?php echo $item->getTitle(); ?></b></h2>
+    <p><?php echo $item->getSummary(); ?></p>
+    <p><?php echo $item->getDescription(); ?></p>
+    <p>Fecha: <?php echo $item->getCreated_at(); ?></p>
+    <hr>
+<?php endforeach; ?>
+```
+### Controller Layer
+En el caso del archivo Controller/Index/Index.php que ya existía, no sufrirá cambios.
+```
+<?php
+
+namespace Tutorial\Example\Controller\Index;
+
+use Magento\Framework\App\Action\Context;
+use Magento\Framework\View\Result\PageFactory;
+
+class Index extends \Magento\Framework\App\Action\Action
+{
+    /**
+     * @param Context $context
+     * @param PageFactory $resultPageFactory
+     */
+    public function __construct(
+        Context $context,
+        PageFactory $resultPageFactory
+    )
+    {
+        parent::__construct($context);
+        $this->resultPageFactory = $resultPageFactory;
+    }
+
+    public function execute()
+    {
+        $resultPageFactory = $this->resultPageFactory->create();
+
+        // Add page title
+        $resultPageFactory->getConfig()->getTitle()->set(__('Example module'));
+
+        // Add breadcrumb
+        /** @var \Magento\Theme\Block\Html\Breadcrumbs */
+        $breadcrumbs = $resultPageFactory->getLayout()->getBlock('breadcrumbs');
+        $breadcrumbs->addCrumb('home',
+            [
+                'label' => __('Home'),
+                'title' => __('Home'),
+                'link' => $this->_url->getUrl('')
+            ]
+        );
+        $breadcrumbs->addCrumb('tutorial_example',
+            [
+                'label' => __('Example'),
+                'title' => __('Example')
+            ]
+        );
+
+        return $resultPageFactory;
+    }
+}
+
+```
