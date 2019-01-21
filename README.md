@@ -17,6 +17,11 @@ El módulo es un elemento estructural de Magento 2 - todo el sistema se basa en 
 - [Actualizar Valores de la Tabla](#actualizar-valores-de-la-tabla)
 - [Actualizar Versión del Módulo](#actualizar-versión-del-módulo)
 
+[MVC](#mvc)
+- [Model Layer](#model-layer)
+- [View Layer](#view-layer)
+- [Controller Layer](#controller-layer)
+
 ## Primeros pasos
 
 Para crear un módulo, se deben completar los siguientes pasos fundamentales:
