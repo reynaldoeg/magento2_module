@@ -178,6 +178,15 @@ o de forma abreviada
 ```
 http://sitio.com/example
 ```
+El formato de las rutas es de la siguiente forma:
+```
+http://sitio.com/route_name/controller/action
+```
+En donde:
+- **route_name**: es un nombre único establecido en routes.xml.
+- **controller**: es el nombre de la carpeta dentro de la carpeta Controller.
+- **action**: es una clase con un método execute para procesar la petición.
+
 En la base de datos, en la tabla **setup_module** es posible ver el nuevo módulo instalado:
 ```
 SELECT * FROM magento.web_setup_module where module = 'Tutorial_Example';
