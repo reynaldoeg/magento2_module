@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Tutorial_Example::index" title="Tutorial Example" module="Tutorial_Example" sortOrder="51" resource="Tutorial_Example::index"/>
+        <add id="Tutorial_Example::post" title="Manage Posts" module="Tutorial_Example" sortOrder="10" action="example/index" resource="Tutorial_Example::post" parent="Tutorial_Example::index"/>
+        <add id="Tutorial_Example::configuration" title="Configuration" module="Tutorial_Example" sortOrder="99" parent="Tutorial_Example::index" action="adminhtml/system_config/" resource="Tutorial_Example::configuration"/>
+    </menu>
+</config>
