@@ -628,3 +628,173 @@ class Index extends \Magento\Framework\App\Action\Action
 }
 
 ```
+
+
+## Admin
+
+En esta sección se verá como crear la parte del administrador:
+
+ 1. Rutas y Controladores.
+ 2. Menú.
+ 3. ACL (Access Control Lists).
+
+### 1. Rutas y Controladores.
+
+#### Rutas del Admin
+
+El archivo que administra las rutas del administrador lo crearemos en la siguiente ruta:
+
+```
+Tutorial/Example/etc/adminhtml/routes.xml
+```
+Y el contenido queda de la siguiente manera:
+```
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:App/etc/routes.xsd">
+    <router id="admin">
+        <route id="example" frontName="example">
+            <module name="Tutorial_Example"/>
+        </route>
+    </router>
+</config>
+```
+
+#### Controladores del Admin
+
+El archivo del controlador quedará en la siguiente ruta:
+
+```
+Tutorial/Example/Controller/Adminhtml/Index/Index.php
+```
+Y el contenido queda de la siguiente manera:
+```
+<?php
+
+namespace Tutorial\Example\Controller\Adminhtml\Index;
+
+use Magento\Framework\Controller\ResultFactory;
+
+class Index extends \Magento\Backend\App\Action
+{
+    public function execute()
+    {
+        $resultPage = $this->resultFactory->create(ResultFactory::TYPE_PAGE);
+        $resultPage->getConfig()->getTitle()->prepend((__('Modulo Example')));
+
+        return $resultPage;
+    }
+}
+
+```
+Para poder acceder a la vista creada, se deberá teclear la siguiente ruta en el explorador:
+
+```
+http://sitio.com/admin/example/index
+```
+
+### 2. Menu.
+
+#### Crear archivo menu.xml
+
+El archivo se deberá crear en la siguiente ruta:
+```
+Tutorial/Example/etc/adminhtml/menu.xml
+```
+Y el contenido será el siguiente:
+```
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        ...
+    </menu>
+</config>
+```
+#### Agregar elementos al menú
+```
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Tutorial_Example::index" title="Tutorial Example" module="Tutorial_Example" sortOrder="51" resource="Tutorial_Example::index"/>
+        <add id="Tutorial_Example::post" title="Manage Posts" module="Tutorial_Example" sortOrder="10" action="example/index" resource="Tutorial_Example::post" parent="Tutorial_Example::index"/>
+        <add id="Tutorial_Example::configuration" title="Configuration" module="Tutorial_Example" sortOrder="99" parent="Tutorial_Example::index" action="adminhtml/system_config/" resource="Tutorial_Example::configuration"/>
+    </menu>
+</config>
+```
+
+En este ejemplo, creamos un elemento de nivel 0 llamado “Tutorial Example” y dos sub-menus llamados   “Manage Posts” y “Configuration”. El archivo menu.xml tiene una colección de etiquetas \<add> dentro del nodo \<menu> que son las que definen cada opción del menú. Los atributos de dicha etiqueta son los siguientes:
+
+-   Atributo  `id`  es el identificador único del elemento. Tiene el formato: {Vendor_ModuleName}::{menu_description}.
+-   Atributo  `title`  es el texto que se mostrará en el menú.
+-   Atributo  `module`  define el módulo al que pertenece dicho menú.
+-   Atributo  `sortOrder`  indica la posición dentro del menú. Entre más pequeño sea el valor, mas arriba aparecerá en el menú.
+-   Atributo  `parent`  es el ID de otro elemento del menú, que indica que éste es un submenú del ID indicado.
+-   Atributo  `action`  para definir la url de la página que vincula este elemento de menú. La url sigue este formato {router_name}_{controller_folder}_{action_name}. - En este ejemplo, este menú tiene un  link al módulo Tutorial_Example, controlador Index y acción Index.
+-   Atributo  `resource`  es usado para definir las reglas de ACL que el administrador debe definir en los Roles.
+
+### 3. ACL (Access Control List)
+
+#### Crear la regla ACL (archivo acl.xml)
+
+El archivo se deberá crear en la siguiente ruta:
+```
+Tutorial/Example/etc/acl.xml
+```
+Y el contenido será:
+```
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Acl/etc/acl.xsd">
+    <acl>
+        <resources>
+            <resource id="Magento_Backend::admin">
+                <resource id="Tutorial_Example::index" title="Tutorial" translate="title" sortOrder="900">
+                    <resource id="Tutorial_Example::post" title="Posts" sortOrder="10"/>
+                    <resource id="Tutorial_Example::configuration" title="Configuration" sortOrder="99" />
+                </resource>
+            </resource>
+        </resources>
+    </acl>
+</config>
+```
+Nuestro recurso se colocará como hijo de  `Magento_Backend::admin`. Cada recurso deberá tener los atributos   `Id, title y sortOrder` :
+
+-   Id: es el identificador del recurso. Se puede usar este Id cuando se defina un recurso en el menú de Administración para limitar el acceso al módulo. Es un string único y con el siguiente formato: Vendor_ModuleName::resource_name.
+-   Title: es la etiqueta o texto que se mostrará en el árbol de recursos (System / User Roles / Role Resources).
+-   sortOrder: indica la posición del recurso en el árbol de recursos.
+
+#### Establecer la regla.
+
+Hay algunos lugares en donde se puede establecer la regla de ACL para limitar el acceso:
+
+**Admin menu**: Colocar el recurso ACL para ocultar el menú en el siguiente archivo:
+```
+app/code/Tutorial/Example/etc/adminhtml/menu.xml
+```
+Contenido:
+```
+<add id="Tutorial_Example::index" title="Tutorial Example" module="Tutorial_Example" sortOrder="51" resource="Tutorial_Example::index"/>
+```
+
+**System configuration**: Colocar el recurso ACL para limitar el acceso a la sección de esta página, en el siguiente archivo.
+```
+File:  app/code/Tutorial/Example/etc/adminhtml/system.xml
+```
+Contenido:
+```
+<section id="example" translate="label" sortOrder="130" showInDefault="1" showInWebsite="1" showInStore="1">
+        ….
+            <resource>Tutorial_Example::configuration</resource>
+        ….
+</section>
+```
+
+**En admin controllers**: Magento provee un tipo abstracto   `Magento\Framework\AuthorizationInterface`  que se puede usar para validar al usuario actualmente logueado. Se puede llamar a este objeto usando la variable :  `$this->_authorization`. En el controlador, se tiene que escribir una función protegida para verificar el recurso:
+
+Ejemplo. Archivo:  `vendor/magento/module-customer/Controller/Adminhtml/Index.php`
+
+```
+protected function _isAllowed()
+{
+ return $this->_authorization->isAllowed('Magento_Customer::manage');
+}
+```
+
