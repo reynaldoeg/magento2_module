@@ -22,6 +22,11 @@ El módulo es un elemento estructural de Magento 2 - todo el sistema se basa en 
 - [View Layer](#view-layer)
 - [Controller Layer](#controller-layer)
 
+[Admin](#admin)
+- [Rutas y Controladores](#1-rutas-y-controladores)
+- [Menú](#2-menu)
+- [ACL (Access Control List)](#3-acl-access-control-list)
+
 ## Primeros pasos
 
 Para crear un módulo, se deben completar los siguientes pasos fundamentales:
