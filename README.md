@@ -22,11 +22,6 @@ El módulo es un elemento estructural de Magento 2 - todo el sistema se basa en 
 - [View Layer](#view-layer)
 - [Controller Layer](#controller-layer)
 
-[Admin](#admin)
-- [Rutas y Controladores](#1-rutas-y-controladores)
-- [Menú](#2-menu)
-- [ACL (Access Control List)](#3-acl-access-control-list)
-
 ## Primeros pasos
 
 Para crear un módulo, se deben completar los siguientes pasos fundamentales:
@@ -642,6 +637,7 @@ En esta sección se verá como crear la parte del administrador:
  1. Rutas y Controladores.
  2. Menú.
  3. ACL (Access Control Lists).
+ 4. Admin Grid
 
 ### 1. Rutas y Controladores.
 
@@ -803,3 +799,233 @@ protected function _isAllowed()
 }
 ```
 
+### 4. Admin Grid (Usando Componentes).
+
+#### Declarar recurso
+
+Declarar el recurso en el archivo de inyección de dependencias (di.xml), el cual conectará con el modelo para obtener los datos de la cuadrícula (grid). El archivo lo creamos en la siguiente ruta:
+
+```
+Tutorial/Example/etc/di.xml
+```
+Y tendrá el siguiente contenido:
+```
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
+        <arguments>
+            <argument name="collections" xsi:type="array">
+                <item name="tutorial_example_item_listing_data_source" xsi:type="string">
+                    Tutorial\Example\Model\ResourceModel\Item\Grid\Collection</item>
+            </argument>
+        </arguments>
+    </type>
+</config>
+```
+Este archivo declarará la clase Collection, la tabla y el "resourceModel" de la tabla. Este origen se llamará en el layout.
+
+#### Crear Grid Collection
+
+El archivo lo creamos en la siguiente ruta:
+
+```
+Tutorial/Example/Model/ResourceModel/Item/Grid/Collection.php
+```
+Y tendrá el siguiente contenido:
+
+```
+<?php
+
+namespace Tutorial\Example\Model\ResourceModel\Item\Grid;
+
+use Magento\Framework\Data\Collection\Db\FetchStrategyInterface as FetchStrategy;
+use Magento\Framework\Data\Collection\EntityFactoryInterface as EntityFactory;
+use Magento\Framework\Event\ManagerInterface as EventManager;
+use Psr\Log\LoggerInterface as Logger;
+
+class Collection extends \Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult
+{
+    public function __construct(
+        EntityFactory $entityFactory,
+        Logger $logger,
+        FetchStrategy $fetchStrategy,
+        EventManager $eventManager,
+        $mainTable = 'tutorial_example',
+        $resourceModel = 'Tutorial\Example\Model\ResourceModel\Item'
+    ) {
+        parent::__construct(
+            $entityFactory,
+            $logger,
+            $fetchStrategy,
+            $eventManager,
+            $mainTable,
+            $resourceModel
+        );
+    }
+}
+```
+
+Este archivo contiene la clase Collection la cual extiende de la clase **\Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult**  y tiene el atributo **\$mainTable** la cual indica la tabla y el atributo **\$resourceModel**  que indica el Modelo.
+
+#### Crear Archivo Layout
+
+Cuando creamos las rutas del admin, se definió la ruta:
+
+```
+admin/example/index/
+```
+Formado por el id del nodo \<route\>
+```
+<router id="admin">
+   <route id="example" frontName="example">
+```
+Por el nombre de la carpeta del controlador del admin y el nombre del controlador en si.
+ ```
+Controler
+  |- Adminhtml
+    |- Index
+      |- Index.php
+```
+
+Para esta *action* /example/index/index, crearemos un layuot con el nombre example_index_index.xml; Este archivo lo colocaremos en la siguiente ruta:
+
+```
+Tutorial/Example/view/adminhtml/layout/example_index_index.xml
+```
+Y tendrá el siguiente contenido:
+```
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="content">
+            <uiComponent name="tutorial_example_item_listing"/>
+        </referenceContainer>
+    </body>
+</page>
+```
+En este layout, declararemos un *uiComponent*  para cargar el contenido de ésta página.
+
+#### Crear Archivo uiComponent
+
+Como se declaro en el archivo de layout anterior, ahora crearemos el componente  *tutorial_example_item_listing.xml* en la siguiente ruta
+
+```
+Tutorial/Example/view/adminhtml/ui_component/tutorial_example_item_listing.xml
+```
+Con el siguiente contenido:
+```
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">tutorial_example_item_listing.tutorial_example_item_listing_data_source</item>
+            <item name="deps" xsi:type="string">tutorial_example_item_listing.tutorial_example_item_listing_data_source</item>
+        </item>
+        <item name="spinner" xsi:type="string">spinner_columns</item>
+        <item name="buttons" xsi:type="array">
+            <item name="add" xsi:type="array">
+                <item name="name" xsi:type="string">add</item>
+                <item name="label" xsi:type="string" translate="true">Add New Item</item>
+                <item name="class" xsi:type="string">primary</item>
+                <item name="url" xsi:type="string">*/*/new</item>
+            </item>
+        </item>
+    </argument>
+    <dataSource name="nameOfDataSource">
+        <argument name="dataProvider" xsi:type="configurableObject">
+            <argument name="class" xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider</argument>
+            <argument name="name" xsi:type="string">tutorial_example_item_listing_data_source</argument>
+            <argument name="primaryFieldName" xsi:type="string">id</argument>
+            <argument name="requestFieldName" xsi:type="string">id</argument>
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="component" xsi:type="string">Magento_Ui/js/grid/provider</item>
+                    <item name="update_url" xsi:type="url" path="mui/index/render"/>
+                    <item name="storageConfig" xsi:type="array">
+                        <item name="indexField" xsi:type="string">id</item>
+                    </item>
+                </item>
+            </argument>
+        </argument>
+    </dataSource>
+    <columns name="spinner_columns">
+        <selectionsColumn name="ids">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="resizeEnabled" xsi:type="boolean">false</item>
+                    <item name="resizeDefaultWidth" xsi:type="string">55</item>
+                    <item name="indexField" xsi:type="string">id</item>
+                </item>
+            </argument>
+        </selectionsColumn>
+        <column name="id">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="filter" xsi:type="string">textRange</item>
+                    <item name="sorting" xsi:type="string">asc</item>
+                    <item name="label" xsi:type="string" translate="true">ID</item>
+                </item>
+            </argument>
+        </column>
+        <column name="title">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="filter" xsi:type="string">text</item>
+                    <item name="editor" xsi:type="array">
+                        <item name="editorType" xsi:type="string">text</item>
+                        <item name="validation" xsi:type="array">
+                            <item name="required-entry" xsi:type="boolean">true</item>
+                        </item>
+                    </item>
+                    <item name="label" xsi:type="string" translate="true">Name</item>
+                </item>
+            </argument>
+        </column>
+        <column name="created_at" class="Magento\Ui\Component\Listing\Columns\Date">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="filter" xsi:type="string">dateRange</item>
+                    <item name="component" xsi:type="string">Magento_Ui/js/grid/columns/date</item>
+                    <item name="dataType" xsi:type="string">date</item>
+                    <item name="label" xsi:type="string" translate="true">Created</item>
+                </item>
+            </argument>
+        </column>
+    </columns>
+</listing>
+```
+
+En este archivo, se puede observar la siguiente estructura:
+
+```
+<listing>
+  <argument name="data" xsi:type="array"> ... </argument>
+  <dataSource name="nameOfDataSource"> ... </dataSource>
+  <columns name="spinner_columns"> ... </colums>
+</listing>
+```
+En el nodo \<argument> se especifica la colección declarada en el archivo di.xml 
+```
+<item>tutorial_example_item_listing.tutorial_example_item_listing_data_source</item>
+```
+También se especifican los botones que contendrá el Grid.
+
+En el nodo \<columns> se especifican las columnas que tendra el Grid
+
+**Crear listing toolbar **
+Este Grid soporta algunas acciones para interactuar con dicha cuadrícula, como ordenar, filtrar borrar, actualizar, etc. 
+Para agregar una barra de herramientas, colocaremos el nodo \<listingToolbar> en el archivo ui_component que estamos creando:
+```
+<listing>
+  <argument name="data" xsi:type="array"> ... </argument>
+  <dataSource name="nameOfDataSource"> ... </dataSource>
+  <listingToolbar name="listing_top">
+        <bookmark name="bookmarks"/>
+        <columnsControls name="columns_controls"/>
+        <exportButton name="export_button"/>
+        <filterSearch name="fulltext"/>
+        <filters name="listing_filters"/>
+        <paging name="listing_paging"/>
+  </listingToolbar>
+  <columns name="spinner_columns"> ... </colums>
+</listing>
+```
