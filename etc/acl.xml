@@ -6,6 +6,7 @@
                 <resource id="Tutorial_Example::index" title="Tutorial" translate="title" sortOrder="900">
                     <resource id="Tutorial_Example::post" title="Posts" sortOrder="10"/>
                     <resource id="Tutorial_Example::configuration" title="Configuration" sortOrder="99" />
+                    <resource id="Tutorial_Example::item_delete" title="Delete Item" sortOrder="95" />
                 </resource>
             </resource>
         </resources>
