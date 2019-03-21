@@ -23,10 +23,12 @@ El módulo es un elemento estructural de Magento 2 - todo el sistema se basa en 
 - [Controller Layer](#controller-layer)
 
 [Admin](#admin)
-- [Rutas y Controladores](#1-rutas-y-controladores)
-- [Menú](#2-menu)
-- [ACL (Access Control List)](#3-acl-access-control-list)
-- [Admin Grid](#4-admin-grid-usando-componentes)
+- [1. Rutas y Controladores](#1-rutas-y-controladores)
+- [2. Menú](#2-menu)
+- [3. ACL (Access Control List)](#3-acl-access-control-list)
+- [4. Admin Grid](#4-admin-grid-usando-componentes)
+- [5. Formularios](#5-formularios)
+- [6. MassActions](#6-massactions)
 
 ## Primeros pasos
 
