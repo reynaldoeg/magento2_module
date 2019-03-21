@@ -644,6 +644,7 @@ En esta sección se verá como crear la parte del administrador:
  2. Menú.
  3. ACL (Access Control Lists).
  4. Admin Grid
+ 5. Formularios
 
 ### 1. Rutas y Controladores.
 
@@ -1034,4 +1035,420 @@ Para agregar una barra de herramientas, colocaremos el nodo \<listingToolbar> en
   </listingToolbar>
   <columns name="spinner_columns"> ... </colums>
 </listing>
+```
+### 5. Formularios.
+
+#### Agregar DataProvider
+
+El archivo lo crearemos en la siguiente ruta:
+
+```
+Tutorial/Example/Ui/DataProvider.php
+```
+Con el siguiente contenido:
+```
+<?php
+
+namespace Tutorial\Example\Ui;
+
+use Magento\Ui\DataProvider\AbstractDataProvider;
+
+class DataProvider extends AbstractDataProvider
+{
+    protected $collection;
+
+    public function __construct(
+        $name,
+        $primaryFieldName,
+        $requestFieldName,
+        $collectionFactory,
+        array $meta = [],
+        array $data = []
+    ) {
+        parent::__construct($name, $primaryFieldName, $requestFieldName, $meta, $data);
+        $this->collection = $collectionFactory->create();
+    }
+
+    public function getData()
+    {
+        $result = [];
+        foreach ($this->collection->getItems() as $item) {
+            $result[$item->getId()]['general'] = $item->getData();
+        }
+        return $result;
+    }
+}
+```
+
+#### Agregar Controladores
+
+Los controladores serán los encargados de mostrar el formulario para crear un nuevo elemento y para guardarlo.
+El encargado de mostrar el formulario será el siguiente archivo:
+```
+Tutorial/Example/Controller/Adminhtml/Item/NewAction.php
+```
+El contenido será el siguiente:
+```
+<?php
+
+namespace Tutorial\Example\Controller\Adminhtml\Item;
+
+use Magento\Framework\Controller\ResultFactory;
+
+class NewAction extends \Magento\Backend\App\Action
+{
+    public function execute()
+    {
+        return $this->resultFactory->create(ResultFactory::TYPE_PAGE);
+    }
+}
+
+```
+
+El encargado de guardar la información será el siguiente archivo:
+```
+Tutorial/Example/Controller/Adminhtml/Item/Save.php
+```
+El contenido será el siguiente:
+```
+<?php
+
+namespace Tutorial\Example\Controller\Adminhtml\Item;
+
+use Tutorial\Example\Model\ItemFactory;
+
+class Save extends \Magento\Backend\App\Action
+{
+    private $itemFactory;
+
+    public function __construct(
+        \Magento\Backend\App\Action\Context $context,
+        ItemFactory $itemFactory
+    ) {
+        $this->itemFactory = $itemFactory;
+        parent::__construct($context);
+    }
+
+    public function execute()
+    {
+        $this->itemFactory->create()
+            ->setData($this->getRequest()->getPostValue()['general'])
+            ->save();
+        
+        return $this->resultRedirectFactory->create()->setPath('example/index/index');
+    }
+}
+
+```
+#### Layout
+
+El layout que tendrá el contenido del formulario lo creamos con el siguiente archivo:
+```
+Tutorial/Example/view/adminhtml/layout/example_item_new.xml
+```
+El contenido será el siguiente:
+```
+<?xml version="1.0"?>
+<page layout="admin-2columns-left" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="content">
+            <uiComponent name="example_item_form"/>
+        </referenceContainer>
+    </body>
+</page>
+```
+Este layout, lo único que hace es llamar a un *uiComponent* que será el siguiente archivo:
+```
+Tutorial/Example/view/adminhtml/ui_component/example_item_form.xml
+```
+El contenido será el siguiente:
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">example_item_form.example_item_form_data_source</item>
+            <item name="deps" xsi:type="string">example_item_form.example_item_form_data_source</item>
+        </item>
+        <item name="label" xsi:type="string" translate="true">General</item>
+        <item name="layout" xsi:type="array">
+            <item name="type" xsi:type="string">tabs</item>
+            <item name="navContainerName" xsi:type="string">left</item>
+        </item>
+        <item name="buttons" xsi:type="array">
+            <item name="save" xsi:type="array">
+                <item name="name" xsi:type="string">save</item>
+                <item name="label" xsi:type="string" translate="true">Guardar</item>
+                <item name="class" xsi:type="string">primary</item>
+                <item name="url" xsi:type="string">*/item/save</item>
+            </item>
+        </item>
+    </argument>
+    <dataSource name="example_item_form_data_source">
+        <argument name="dataProvider" xsi:type="configurableObject">
+            <argument name="class" xsi:type="string">Tutorial\Example\Ui\DataProvider</argument>
+            <argument name="name" xsi:type="string">example_item_form_data_source</argument>
+            <argument name="primaryFieldName" xsi:type="string">id</argument>
+            <argument name="requestFieldName" xsi:type="string">id</argument>
+            <argument name="collectionFactory" xsi:type="object">Tutorial\Example\Model\ResourceModel\Item\CollectionFactory</argument>
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="submit_url" xsi:type="url" path="example/item/save"/>
+                </item>
+            </argument>
+        </argument>
+        <argument name="data" xsi:type="array">
+            <item name="js_config" xsi:type="array">
+                <item name="component" xsi:type="string">Magento_Ui/js/form/provider</item>
+            </item>
+        </argument>
+    </dataSource>
+    <fieldset name="general">
+        <argument name="data" xsi:type="array">
+            <item name="config" xsi:type="array">
+                <item name="label" xsi:type="string" translate="true">General</item>
+            </item>
+        </argument>
+        <field name="title">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="label" xsi:type="string" translate="true">Título</item>
+                    <item name="dataType" xsi:type="string">text</item>
+                    <item name="formElement" xsi:type="string">input</item>
+                    <item name="validation" xsi:type="array">
+                        <item name="required-entry" xsi:type="boolean">true</item>
+                    </item>
+                </item>
+            </argument>
+        </field>
+        <field name="summary">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="label" xsi:type="string" translate="true">Resumen</item>
+                    <item name="dataType" xsi:type="string">text</item>
+                    <item name="formElement" xsi:type="string">input</item>
+                </item>
+            </argument>
+        </field>
+        <field name="description">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="label" xsi:type="string" translate="true">Descripción</item>
+                    <item name="dataType" xsi:type="string">text</item>
+                    <item name="formElement" xsi:type="string">input</item>
+                </item>
+            </argument>
+        </field>
+    </fieldset>
+</form>
+```
+
+### 6. MassActions.
+
+#### Agregar Listado de Ordenes al Grid
+
+Modificaremos el layout que contiene el Grid de elementos :
+```
+Tutorial/Example/view/adminhtml/ui_component/tutorial_example_item_listing.xml
+```
+
+En el nodo \<listingToolbar> agregaremos el sub nodo \<massaction> con el siguiente contenido:
+
+```
+<listing>
+  <argument name="data" xsi:type="array"> ... </argument>
+  <dataSource name="nameOfDataSource"> ... </dataSource>
+  <listingToolbar name="listing_top">
+        <bookmark name="bookmarks"/>
+        <columnsControls name="columns_controls"/>
+        <exportButton name="export_button"/>
+        <filterSearch name="fulltext"/>
+        <filters name="listing_filters"/>
+        <paging name="listing_paging"/>
+        <massaction name="listing_massaction">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="component" xsi:type="string">Magento_Ui/js/grid/tree-massactions</item>
+                </item>
+            </argument>
+            <action name="delete">
+                <argument name="data" xsi:type="array">
+                    <item name="config" xsi:type="array">
+                        <item name="type" xsi:type="string">delete</item>
+                        <item name="label" xsi:type="string" translate="true">Delete</item>
+                        <item name="url" xsi:type="url" path="example/item/massDelete"/>
+                        <item name="confirm" xsi:type="array">
+                            <item name="title" xsi:type="string" translate="true">Delete Post</item>
+                            <item name="message" xsi:type="string" translate="true">Are you sure you wan't to delete selected items?</item>
+                        </item>
+                    </item>
+                </argument>
+            </action>
+        </massaction>
+  </listingToolbar>
+  <columns name="spinner_columns"> ... </colums>
+</listing>
+```
+Esta parte agregará una lista de acciones (en este caso Delete) para poder aplicar a todos los elementos seleccionados.
+
+#### Agregar Controladores
+Agregaremos el archivo :
+```
+Tutorial/Example/Controller/Adminhtml/Item/Delete.php
+```
+Con el contenido:
+```
+<?php
+namespace Tutorial\Example\Controller\Adminhtml\Item;
+ 
+use Magento\Backend\App\Action;
+ 
+class Delete extends Action
+{
+    protected $_model;
+ 
+    /**
+     * @param Action\Context $context
+     * @param \Tutorial\Example\Model\Item $model
+     */
+    public function __construct(
+        Action\Context $context,
+        \Tutorial\Example\Model\Item $model
+    ) {
+        parent::__construct($context);
+        $this->_model = $model;
+    }
+ 
+    /**
+     * {@inheritdoc}
+     */
+    protected function _isAllowed()
+    {
+        return $this->_authorization->isAllowed('Tutorial_Example::item_delete');
+    }
+ 
+    /**
+     * Delete action
+     *
+     * @return \Magento\Framework\Controller\ResultInterface
+     */
+    public function execute()
+    {
+        $id = $this->getRequest()->getParam('id');
+        /** @var \Magento\Backend\Model\View\Result\Redirect $resultRedirect */
+        $resultRedirect = $this->resultRedirectFactory->create();
+        if ($id) {
+            try {
+                $model = $this->_model;
+                $model->load($id);
+                $model->delete();
+                $this->messageManager->addSuccess(__('Item deleted'));
+                return $resultRedirect->setPath('example/index/index');
+            } catch (\Exception $e) {
+                $this->messageManager->addError($e->getMessage());
+                return $resultRedirect->setPath('*/*/edit', ['id' => $id]);
+            }
+        }
+        $this->messageManager->addError(__('Item does not exist'));
+        return $resultRedirect->setPath('*/*/');
+    }
+}
+```
+
+También agregaremos el siguiente controlador :
+```
+Tutorial/Example/Controller/Adminhtml/Item/MassDelete.php
+```
+Con el contenido:
+```
+<?php
+namespace Tutorial\Example\Controller\Adminhtml\Item;
+ 
+use Magento\Backend\App\Action\Context;
+use Magento\Ui\Component\MassAction\Filter;
+use Magento\Framework\Controller\ResultFactory;
+use Tutorial\Example\Model\ResourceModel\Item\Collection;
+use Tutorial\Example\Model\ResourceModel\Item\CollectionFactory;
+ 
+class MassDelete extends \Magento\Backend\App\Action
+{
+    /**
+     * @var Filter
+     */
+    protected $filter;
+ 
+    /**
+     * @var CollectionFactory
+     */
+    protected $collectionFactory;
+ 
+ 
+    /**
+     * @param Context $context
+     * @param Filter $filter
+     * @param CollectionFactory $collectionFactory
+     */
+    public function __construct(Context $context, Filter $filter, CollectionFactory $collectionFactory)
+    {
+        $this->filter = $filter;
+        $this->collectionFactory = $collectionFactory;
+        parent::__construct($context);
+    }
+    /**
+     * Execute action
+     *
+     * @return \Magento\Backend\Model\View\Result\Redirect
+     * @throws \Magento\Framework\Exception\LocalizedException|\Exception
+     */
+    public function execute()
+    {
+        $collection = $this->filter->getCollection($this->collectionFactory->create());
+        $collectionSize = $collection->getSize();
+        foreach ($collection as $item) {
+            $item->delete();
+        }
+ 
+        $this->messageManager->addSuccess(__('A total of %1 record(s) have been deleted.', $collectionSize));
+ 
+        /** @var \Magento\Backend\Model\View\Result\Redirect $resultRedirect */
+        $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
+        return $resultRedirect->setPath('example/index/index');
+    }
+}
+```
+Estos archivos serán los encargados de eliminar los elementos seleccionados y redireccionar nuevamente al Grid.
+
+El archivo **Delete.php** contiene el método _isAllowed() el cual permite verificar si dicha acción está permitida en el ACL del usuario. 
+
+```
+protected function _isAllowed()
+    {
+        return $this->_authorization->isAllowed('Tutorial_Example::item_delete');
+    }
+```
+Para poder definir esta regla, tenemos que modificar el archivo:
+```
+Tutorial/Example/etc/acl.xml
+```
+Al que le agregaremos el siguiente nodo:
+```
+<resource id="Tutorial_Example::item_delete" title="Delete Item" sortOrder="95" />
+```
+El archivo quedaría de la siguiente forma:
+```
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Acl/etc/acl.xsd">
+    <acl>
+        <resources>
+            <resource id="Magento_Backend::admin">
+                <resource id="Tutorial_Example::index" title="Tutorial" translate="title" sortOrder="900">
+                    <resource id="Tutorial_Example::post" title="Posts" sortOrder="10"/>
+                    <resource id="Tutorial_Example::configuration" title="Configuration" sortOrder="99" />
+                    <resource id="Tutorial_Example::item_delete" title="Delete Item" sortOrder="95" />
+                </resource>
+            </resource>
+        </resources>
+    </acl>
+</config>
+
 ```
