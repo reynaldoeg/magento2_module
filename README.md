@@ -1454,3 +1454,105 @@ El archivo quedaría de la siguiente forma:
 </config>
 
 ```
+
+#### Agregar Columna para Editar
+
+Para agregar una columna al Grid con la opción para editar el registro, se tiene que modigicar el archivo **tutorial_example_item_listing.xml**:
+```
+Tutorial/Example/view/adminhtml/ui_component/tutorial_example_item_listing.xml
+```
+Agregaremos dentro del nodo \<columns> la sección \<actionsColumn>  con el siguiente contenido:
+```
+<columns>
+    <actionsColumn name="actions" class="Tutorial\Example\Ui\Component\Listing\Grid\Column\Action">
+        <argument name="data" xsi:type="array">
+            <item name="config" xsi:type="array">
+                <item name="resizeEnabled" xsi:type="boolean">false</item>
+                <item name="resizeDefaultWidth" xsi:type="string">107</item>
+                <item name="indexField" xsi:type="string">id</item>
+            </item>
+        </argument>
+   </actionsColumn>
+</columns>
+```
+Dentro de esta sección, se puede observar el atributo class, el cual llama al componente que realizará la acción de editar:
+```
+<actionsColumn name="actions" class="Tutorial\Example\Ui\Component\Listing\Grid\Column\Action">
+```
+El archivo se crea en la siguiente ruta:
+```
+Tutorial\Example\Ui\Component\Listing\Grid\Column\Action.php
+```
+Con el contenido:
+```
+<?php
+
+namespace Tutorial\Example\Ui\Component\Listing\Grid\Column;
+
+use Magento\Framework\View\Element\UiComponent\ContextInterface;
+use Magento\Framework\View\Element\UiComponentFactory;
+use Magento\Ui\Component\Listing\Columns\Column;
+use Magento\Framework\UrlInterface;
+
+class Action extends Column
+{
+    /** Url path */
+    const ROW_EDIT_URL = 'example/item/new';
+    /** @var UrlInterface */
+    protected $_urlBuilder;
+
+    /**
+     * @var string
+     */
+    private $_editUrl;
+
+    /**
+     * @param ContextInterface   $context
+     * @param UiComponentFactory $uiComponentFactory
+     * @param UrlInterface       $urlBuilder
+     * @param array              $components
+     * @param array              $data
+     * @param string             $editUrl
+     */
+    public function __construct(
+        ContextInterface $context,
+        UiComponentFactory $uiComponentFactory,
+        UrlInterface $urlBuilder,
+        array $components = [],
+        array $data = [],
+        $editUrl = self::ROW_EDIT_URL
+    ) {
+        $this->_urlBuilder = $urlBuilder;
+        $this->_editUrl = $editUrl;
+        parent::__construct($context, $uiComponentFactory, $components, $data);
+    }
+
+    /**
+     * Prepare Data Source.
+     *
+     * @param array $dataSource
+     *
+     * @return array
+     */
+    public function prepareDataSource(array $dataSource)
+    {
+        if (isset($dataSource['data']['items'])) {
+            foreach ($dataSource['data']['items'] as &$item) {
+                $name = $this->getData('name');
+                if (isset($item['id'])) {
+                    $item[$name]['edit'] = [
+                        'href' => $this->_urlBuilder->getUrl(
+                            $this->_editUrl,
+                            ['id' => $item['id']]
+                        ),
+                        'label' => __('Edit'),
+                    ];
+                }
+            }
+        }
+
+        return $dataSource;
+    }
+}
+```
+
